@@ -1,0 +1,35 @@
+name: rollback
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "SHA curto (7 caracteres) da última imagem estável"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Reimplantar imagem estável
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}:$TAG"
+          curl -fsS -G "$HOOK" --data-urlencode "imgURL=$IMAGE"
+      - name: Smoke test (versão restaurada?)
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          for i in $(seq 1 20); do
+            if curl -fsS "$APP_URL/version" | grep -q "$TAG"; then
+              echo "Rollback concluído: $TAG no ar"; exit 0
+            fi
+            sleep 15
+          done
+          echo "Rollback não confirmado"; exit 1
