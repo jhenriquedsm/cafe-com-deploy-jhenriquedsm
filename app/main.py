@@ -18,6 +18,7 @@ DbSession = Annotated[Session, Depends(get_db)]
 class CafeIn(BaseModel):
     nome: str = Field(min_length=1, max_length=80)
     preco: float = Field(gt=0)
+    origem: str | None = Field(default=None, max_length=80)
 
 
 def preco_com_desconto(preco: float, pct: float) -> float:
@@ -29,8 +30,7 @@ def preco_com_desconto(preco: float, pct: float) -> float:
 
 
 def _saida(cafe: Cafe) -> dict:
-    return {"id": cafe.id, "nome": cafe.nome, "preco": cafe.preco}
-
+    return {"id": cafe.id, "nome": cafe.nome, "preco": cafe.preco, "origem": cafe.origem}
 
 @app.get("/health")
 def health():
@@ -50,6 +50,8 @@ def listar_cafes(db: DbSession):
 @app.post("/cafes", status_code=201)
 def criar_cafe(dados: CafeIn, db: DbSession):
     cafe = Cafe(nome=dados.nome, preco=dados.preco)
+    if dados.origem:
+        cafe.origem = dados.origem
     db.add(cafe)
     try:
         db.commit()

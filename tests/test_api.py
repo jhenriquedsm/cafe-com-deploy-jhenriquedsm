@@ -42,3 +42,10 @@ def test_preco_com_desconto_invalido_retorna_422(client):
     cafe = client.post("/cafes", json={"nome": "Coado", "preco": 8}).json()
     resposta = client.get(f"/cafes/{cafe['id']}/preco", params={"desconto": 80})
     assert resposta.status_code == 422
+    
+def test_criar_cafe_com_origem(client):
+    resposta = client.post(
+        "/cafes", json={"nome": "Cerrado", "preco": 12, "origem": "Cerrado Mineiro"}
+    )
+    assert resposta.status_code == 201
+    assert resposta.json()["origem"] == "Cerrado Mineiro"
