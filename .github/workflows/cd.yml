@@ -1,0 +1,76 @@
+name: cd
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  build:
+    needs: ci
+    runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.meta.outputs.image }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: meta
+        run: echo "image=ghcr.io/${GITHUB_REPOSITORY,,}:${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+      - uses: docker/build-push-action@v6
+        with:
+          push: true
+          tags: ${{ steps.meta.outputs.image }}
+          build-args: APP_VERSION=${{ github.sha }}
+
+  staging:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Deploy em staging
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+          IMAGE: ${{ needs.build.outputs.image }}
+        run: curl -fsS -G "$HOOK" --data-urlencode "imgURL=$IMAGE"
+      - name: Smoke test (versão correta no ar?)
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+        run: |
+          for i in $(seq 1 20); do
+            if curl -fsS "$APP_URL/version" | grep -q "${GITHUB_SHA::7}"; then
+              echo "Versão ${GITHUB_SHA::7} no ar"; exit 0
+            fi
+            sleep 15
+          done
+          echo "Smoke test falhou"; exit 1
+
+  production:
+    needs: [build, staging]
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Deploy em produção (mesma imagem)
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+          IMAGE: ${{ needs.build.outputs.image }}
+        run: curl -fsS -G "$HOOK" --data-urlencode "imgURL=$IMAGE"
+      - name: Smoke test
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+        run: |
+          for i in $(seq 1 20); do
+            if curl -fsS "$APP_URL/version" | grep -q "${GITHUB_SHA::7}"; then
+              echo "Versão ${GITHUB_SHA::7} no ar"; exit 0
+            fi
+            sleep 15
+          done
+          echo "Smoke test falhou"; exit 1
