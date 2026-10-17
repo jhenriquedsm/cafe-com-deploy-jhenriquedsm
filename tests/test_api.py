@@ -49,3 +49,8 @@ def test_criar_cafe_com_origem(client):
     )
     assert resposta.status_code == 201
     assert resposta.json()["origem"] == "Cerrado Mineiro"
+    
+def test_raiz(client):
+    resposta = client.get("/")
+    assert resposta.status_code == 200
+    assert resposta.json()["app"] == "Café com Deploy"
