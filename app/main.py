@@ -32,6 +32,10 @@ def preco_com_desconto(preco: float, pct: float) -> float:
 def _saida(cafe: Cafe) -> dict:
     return {"id": cafe.id, "nome": cafe.nome, "preco": cafe.preco, "origem": cafe.origem}
 
+@app.get("/")
+def raiz():
+    return {"app": "Café com Deploy", "docs": "/docs"}
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
