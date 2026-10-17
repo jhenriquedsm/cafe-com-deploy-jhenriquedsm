@@ -7,6 +7,7 @@ API de cafés especiais com um pipeline de CI/CD completo: do commit à produç�
 
 - **Staging:** https://cafe-staging-et1i.onrender.com
 - **Produção:** https://cafe-production.onrender.com
+- **Vídeo Game Day:** https://www.youtube.com/watch?v=1E6tpeISscY
 
 ## Relatório de Voo
 
