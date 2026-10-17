@@ -23,7 +23,7 @@ class CafeIn(BaseModel):
 
 def preco_com_desconto(preco: float, pct: float) -> float:
     """Regra de negócio: desconto entre 0% e o máximo configurado."""
-    maximo = float(os.getenv("DESCONTO_MAXIMO", "50"))
+    maximo = float(os.getenv("DESCONTO_MAXIMO", "100"))
     if not 0 <= pct <= maximo:
         raise ValueError("desconto inválido")
     return round(preco * (1 - pct / 100), 2)
